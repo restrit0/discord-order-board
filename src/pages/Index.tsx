@@ -47,9 +47,7 @@ const Index = () => {
   const totalPedidos = pedidos.length;
   const pedidosPendentes = pedidos.filter(p => p.status === 'Pendente').length;
   const pedidosUrgentes = pedidos.filter(p => p.status === 'Urgente').length;
-  const valorTotal = pedidos
-    .filter(p => p.status !== 'Finalizado')
-    .reduce((total, p) => total + p.valor, 0);
+  const valorTotal = pedidos.reduce((total, p) => total + p.valor, 0);
 
   const criarPedido = () => {
     if (!cliente || !descricao || !dataEntrega || !valor) {
@@ -113,21 +111,30 @@ const Index = () => {
       return acc;
     }, {} as Record<string, Pedido[]>);
 
-  const getStatusIcon = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Pendente': return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'Urgente': return <AlertTriangle className="w-4 h-4 text-red-500" />;
-      case 'Finalizado': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'Pendente': 
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/30">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+            <span className="text-sm font-medium">Pendente</span>
+          </div>
+        );
+      case 'Urgente': 
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-300 rounded-full border border-red-500/30">
+            <div className="w-2 h-2 bg-red-500 rounded-full" />
+            <span className="text-sm font-medium">Urgente</span>
+          </div>
+        );
+      case 'Finalizado': 
+        return (
+          <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30">
+            <div className="w-2 h-2 bg-green-500 rounded-full" />
+            <span className="text-sm font-medium">Finalizado</span>
+          </div>
+        );
       default: return null;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pendente': return 'bg-yellow-500';
-      case 'Urgente': return 'bg-red-500';
-      case 'Finalizado': return 'bg-green-500';
-      default: return 'bg-gray-500';
     }
   };
 
@@ -152,50 +159,38 @@ const Index = () => {
       </div>
 
       <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Formulário de Criação */}
+        {/* Formulário de Criação - Mais Compacto */}
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="text-xl font-semibold mb-6 flex items-center">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
             <Plus className="w-5 h-5 mr-2 text-green-400" />
             Criar Novo Pedido
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <Label htmlFor="cliente">Cliente/Nome</Label>
+              <Label htmlFor="cliente" className="text-sm text-gray-300">Cliente</Label>
               <Input
                 id="cliente"
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
+                className="bg-gray-700 border-gray-600 text-white mt-1"
                 placeholder="Nome do cliente"
               />
             </div>
             
             <div>
-              <Label htmlFor="descricao">Descrição do Pedido</Label>
-              <Textarea
-                id="descricao"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="Descrição detalhada"
-                rows={1}
-              />
-            </div>
-            
-            <div>
-              <Label>Data de Entrega</Label>
+              <Label className="text-sm text-gray-300">Data de Entrega</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600",
+                      "w-full justify-start text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600 mt-1",
                       !dataEntrega && "text-gray-400"
                     )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
-                    {dataEntrega ? format(dataEntrega, "PPP", { locale: ptBR }) : "Selecionar data"}
+                    {dataEntrega ? format(dataEntrega, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-600">
@@ -209,10 +204,23 @@ const Index = () => {
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <Label htmlFor="descricao" className="text-sm text-gray-300">Descrição</Label>
+              <Input
+                id="descricao"
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                className="bg-gray-700 border-gray-600 text-white mt-1"
+                placeholder="Descrição do pedido"
+              />
+            </div>
             
             <div>
-              <Label htmlFor="valor">Valor</Label>
-              <div className="relative">
+              <Label htmlFor="valor" className="text-sm text-gray-300">Valor</Label>
+              <div className="relative mt-1">
                 <Input
                   id="valor"
                   type="number"
@@ -235,9 +243,9 @@ const Index = () => {
             </div>
             
             <div>
-              <Label>Status Inicial</Label>
+              <Label className="text-sm text-gray-300">Status</Label>
               <Select value={status} onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => setStatus(value)}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-600">
@@ -262,32 +270,30 @@ const Index = () => {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="flex items-end">
-              <Button 
-                onClick={criarPedido}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Pedido
-              </Button>
-            </div>
           </div>
+            
+          <Button 
+            onClick={criarPedido}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Criar Pedido
+          </Button>
         </div>
 
         {/* Estatísticas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-xl p-6 text-white border border-gray-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100">Total de Pedidos</p>
+                <p className="text-gray-300">Total de Pedidos</p>
                 <p className="text-2xl font-bold">{totalPedidos}</p>
               </div>
-              <Package className="w-8 h-8 text-blue-200" />
+              <Package className="w-8 h-8 text-gray-400" />
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-xl p-6 text-white border border-yellow-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-yellow-100">Pendentes</p>
@@ -297,7 +303,7 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-red-600 to-red-500 rounded-xl p-6 text-white border border-red-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-100">Urgentes</p>
@@ -307,7 +313,7 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-xl p-6 text-white border border-green-400">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100">Valor Total</p>
@@ -333,21 +339,17 @@ const Index = () => {
                   <div
                     key={pedido.id}
                     className={cn(
-                      "bg-gray-800 rounded-xl p-4 border transition-all duration-300 hover:bg-gray-750",
+                      "bg-gray-800 rounded-xl p-4 transition-all duration-300 hover:bg-gray-750",
                       pedido.status === 'Urgente' 
-                        ? "border-red-500 animate-pulse shadow-lg shadow-red-500/25" 
-                        : "border-gray-700"
+                        ? "border-2 border-red-500/50 shadow-lg shadow-red-500/10" 
+                        : "border border-gray-700"
                     )}
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-lg">{pedido.cliente}</h4>
-                          <div className="flex items-center gap-1">
-                            <div className={cn("w-2 h-2 rounded-full", getStatusColor(pedido.status))} />
-                            {getStatusIcon(pedido.status)}
-                            <span className="text-sm text-gray-400">{pedido.status}</span>
-                          </div>
+                          {getStatusBadge(pedido.status)}
                         </div>
                         <p className="text-gray-300">{pedido.descricao}</p>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
