@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { format, parseISO, startOfMonth, isSameMonth } from 'date-fns';
+import { format, parseISO, startOfMonth, isSameMonth, differenceInHours, differenceInMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, EyeOff, Plus, Calendar, DollarSign, Package, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Plus, Calendar, DollarSign, Package, Clock, AlertTriangle, CheckCircle, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,6 +27,7 @@ const Index = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [mostrarValor, setMostrarValor] = useState(true);
   const [progressoAtual, setProgressoAtual] = useState(0);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   // Estados do formulário
   const [cliente, setCliente] = useState('');
@@ -40,6 +41,14 @@ const Index = () => {
     const interval = setInterval(() => {
       setProgressoAtual((prev) => (prev >= 100 ? 0 : prev + 0.5));
     }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Atualizar tempo atual a cada minuto
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Atualiza a cada minuto
     return () => clearInterval(interval);
   }, []);
 
@@ -95,13 +104,46 @@ const Index = () => {
     });
   };
 
-  // Organizar pedidos por mês e status
+  const getTempoRestante = (dataCriacao: string) => {
+    const criacao = parseISO(dataCriacao);
+    const agora = currentTime;
+    const prazoFinal = new Date(criacao.getTime() + (48 * 60 * 60 * 1000)); // 48 horas
+    
+    const horasRestantes = differenceInHours(prazoFinal, agora);
+    const minutosRestantes = differenceInMinutes(prazoFinal, agora) % 60;
+    
+    if (horasRestantes < 0) {
+      return { texto: "Prazo expirado", vencido: true };
+    }
+    
+    if (horasRestantes < 1) {
+      return { 
+        texto: `${minutosRestantes}min restantes`, 
+        vencido: false,
+        critico: true 
+      };
+    }
+    
+    return { 
+      texto: `${horasRestantes}h ${minutosRestantes}min restantes`, 
+      vencido: false,
+      critico: horasRestantes < 6 
+    };
+  };
+
+  // Organizar pedidos por mês e status, com ordem de chegada
   const pedidosOrganizados = pedidos
     .sort((a, b) => {
       // Finalizados vão para o fim
       if (a.status === 'Finalizado' && b.status !== 'Finalizado') return 1;
       if (a.status !== 'Finalizado' && b.status === 'Finalizado') return -1;
-      // Ordenar por data de criação
+      
+      // Para pedidos não finalizados, ordenar por data de criação (mais antigo primeiro)
+      if (a.status !== 'Finalizado' && b.status !== 'Finalizado') {
+        return new Date(a.dataCriacao).getTime() - new Date(b.dataCriacao).getTime();
+      }
+      
+      // Para finalizados, ordenar por data de criação (mais recente primeiro)
       return new Date(b.dataCriacao).getTime() - new Date(a.dataCriacao).getTime();
     })
     .reduce((acc, pedido) => {
@@ -115,23 +157,23 @@ const Index = () => {
     switch (status) {
       case 'Pendente': 
         return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/30">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-            <span className="text-sm font-medium">Pendente</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/20 text-yellow-300 rounded-full border border-yellow-500/40 font-semibold">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+            <span className="text-sm">Pendente</span>
           </div>
         );
       case 'Urgente': 
         return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-300 rounded-full border border-red-500/30">
-            <div className="w-2 h-2 bg-red-500 rounded-full" />
-            <span className="text-sm font-medium">Urgente</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-300 rounded-full border border-red-500/40 font-semibold">
+            <div className="w-3 h-3 bg-red-500 rounded-full" />
+            <span className="text-sm">Urgente</span>
           </div>
         );
       case 'Finalizado': 
         return (
-          <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 text-green-300 rounded-full border border-green-500/30">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <span className="text-sm font-medium">Finalizado</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-300 rounded-full border border-green-500/40 font-semibold">
+            <div className="w-3 h-3 bg-green-500 rounded-full" />
+            <span className="text-sm">Finalizado</span>
           </div>
         );
       default: return null;
@@ -144,14 +186,14 @@ const Index = () => {
       <div className="bg-gray-800 border-b border-gray-700 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               Sistema de Pedidos
             </h1>
             <p className="text-gray-400 mt-1">Gerencie seus pedidos de forma profissional e eficiente</p>
           </div>
           <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-100"
+              className="h-full bg-gradient-to-r from-white to-gray-400 transition-all duration-100"
               style={{ width: `${progressoAtual}%` }}
             />
           </div>
@@ -274,7 +316,7 @@ const Index = () => {
             
           <Button 
             onClick={criarPedido}
-            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
+            className="w-full bg-gradient-to-r from-white to-gray-400 hover:from-gray-100 hover:to-gray-500 text-gray-900 font-semibold transition-all duration-200"
           >
             <Plus className="w-4 h-4 mr-2" />
             Criar Pedido
@@ -335,62 +377,79 @@ const Index = () => {
               <h3 className="text-lg font-medium text-gray-300 capitalize">{mesAno}</h3>
               
               <div className="grid gap-4">
-                {pedidosDoMes.map((pedido) => (
-                  <div
-                    key={pedido.id}
-                    className={cn(
-                      "bg-gray-800 rounded-xl p-4 transition-all duration-300 hover:bg-gray-750",
-                      pedido.status === 'Urgente' 
-                        ? "border-2 border-red-500/50 shadow-lg shadow-red-500/10" 
-                        : "border border-gray-700"
-                    )}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h4 className="font-semibold text-lg">{pedido.cliente}</h4>
-                          {getStatusBadge(pedido.status)}
+                {pedidosDoMes.map((pedido) => {
+                  const tempoInfo = getTempoRestante(pedido.dataCriacao);
+                  return (
+                    <div
+                      key={pedido.id}
+                      className={cn(
+                        "bg-gray-800 rounded-xl p-4 transition-all duration-300 hover:bg-gray-750",
+                        pedido.status === 'Urgente' 
+                          ? "border-2 border-red-500/70" 
+                          : "border border-gray-700"
+                      )}
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <h4 className="font-semibold text-lg">{pedido.cliente}</h4>
+                            {getStatusBadge(pedido.status)}
+                            {pedido.status !== 'Finalizado' && (
+                              <div className={cn(
+                                "flex items-center gap-2 px-3 py-1 rounded-full border text-sm font-medium",
+                                tempoInfo.vencido 
+                                  ? "bg-red-900/50 text-red-300 border-red-500/50"
+                                  : tempoInfo.critico
+                                  ? "bg-orange-900/50 text-orange-300 border-orange-500/50"
+                                  : "bg-blue-900/50 text-blue-300 border-blue-500/50"
+                              )}>
+                                <Timer className="w-3 h-3" />
+                                <span>{tempoInfo.texto}</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-gray-300">{pedido.descricao}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span>Entrega: {format(parseISO(pedido.dataEntrega), "dd/MM/yyyy", { locale: ptBR })}</span>
+                            <span>Valor: {mostrarValor ? `R$ ${pedido.valor.toFixed(2)}` : '••••••'}</span>
+                            <span>Criado: {format(parseISO(pedido.dataCriacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
+                          </div>
                         </div>
-                        <p className="text-gray-300">{pedido.descricao}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>Entrega: {format(parseISO(pedido.dataEntrega), "dd/MM/yyyy", { locale: ptBR })}</span>
-                          <span>Valor: {mostrarValor ? `R$ ${pedido.valor.toFixed(2)}` : '••••••'}</span>
+                        
+                        <div className="flex gap-2">
+                          <Select
+                            value={pedido.status}
+                            onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => alterarStatus(pedido.id, value)}
+                          >
+                            <SelectTrigger className="w-36 bg-gray-700 border-gray-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-600">
+                              <SelectItem value="Pendente" className="text-white">
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
+                                  Pendente
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="Urgente" className="text-white">
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2" />
+                                  Urgente
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="Finalizado" className="text-white">
+                                <div className="flex items-center">
+                                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                                  Finalizado
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <Select
-                          value={pedido.status}
-                          onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => alterarStatus(pedido.id, value)}
-                        >
-                          <SelectTrigger className="w-36 bg-gray-700 border-gray-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-600">
-                            <SelectItem value="Pendente" className="text-white">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
-                                Pendente
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="Urgente" className="text-white">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 bg-red-500 rounded-full mr-2" />
-                                Urgente
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="Finalizado" className="text-white">
-                              <div className="flex items-center">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-                                Finalizado
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
