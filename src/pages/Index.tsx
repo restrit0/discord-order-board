@@ -1,15 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import { format, parseISO, startOfMonth, isSameMonth, differenceInHours, differenceInMinutes } from 'date-fns';
+import { format, parseISO, startOfMonth, isSameMonth, differenceInHours, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, EyeOff, Plus, Calendar, DollarSign, Package, Clock, AlertTriangle, CheckCircle, Timer } from 'lucide-react';
+import { Eye, EyeOff, Plus, DollarSign, Package, Clock, AlertTriangle, CheckCircle, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 
@@ -17,7 +13,6 @@ interface Pedido {
   id: string;
   cliente: string;
   descricao: string;
-  dataEntrega: string;
   valor: number;
   status: 'Pendente' | 'Urgente' | 'Finalizado';
   dataCriacao: string;
@@ -32,7 +27,6 @@ const Index = () => {
   // Estados do formulário
   const [cliente, setCliente] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [dataEntrega, setDataEntrega] = useState<Date>();
   const [valor, setValor] = useState('');
   const [status, setStatus] = useState<'Pendente' | 'Urgente' | 'Finalizado'>('Pendente');
 
@@ -44,13 +38,31 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Atualizar tempo atual a cada minuto
+  // Atualizar tempo atual a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Atualiza a cada minuto
+    }, 1000); // Atualiza a cada segundo
     return () => clearInterval(interval);
   }, []);
+
+  // Verificar pedidos que devem ser movidos para urgente automaticamente
+  useEffect(() => {
+    setPedidos(prev => 
+      prev.map(pedido => {
+        if (pedido.status === 'Pendente') {
+          const criacao = parseISO(pedido.dataCriacao);
+          const prazoFinal = new Date(criacao.getTime() + (48 * 60 * 60 * 1000));
+          const horasRestantes = differenceInHours(prazoFinal, currentTime);
+          
+          if (horasRestantes < 6 && horasRestantes >= 0) {
+            return { ...pedido, status: 'Urgente' as const };
+          }
+        }
+        return pedido;
+      })
+    );
+  }, [currentTime]);
 
   // Estatísticas calculadas
   const totalPedidos = pedidos.length;
@@ -59,7 +71,7 @@ const Index = () => {
   const valorTotal = pedidos.reduce((total, p) => total + p.valor, 0);
 
   const criarPedido = () => {
-    if (!cliente || !descricao || !dataEntrega || !valor) {
+    if (!cliente || !descricao || !valor) {
       toast({
         title: "Campos obrigatórios",
         description: "Por favor, preencha todos os campos.",
@@ -72,7 +84,6 @@ const Index = () => {
       id: Date.now().toString(),
       cliente,
       descricao,
-      dataEntrega: dataEntrega.toISOString(),
       valor: parseFloat(valor),
       status,
       dataCriacao: new Date().toISOString()
@@ -83,7 +94,6 @@ const Index = () => {
     // Limpar formulário
     setCliente('');
     setDescricao('');
-    setDataEntrega(undefined);
     setValor('');
     setStatus('Pendente');
 
@@ -111,6 +121,7 @@ const Index = () => {
     
     const horasRestantes = differenceInHours(prazoFinal, agora);
     const minutosRestantes = differenceInMinutes(prazoFinal, agora) % 60;
+    const segundosRestantes = differenceInSeconds(prazoFinal, agora) % 60;
     
     if (horasRestantes < 0) {
       return { texto: "Prazo expirado", vencido: true };
@@ -118,14 +129,14 @@ const Index = () => {
     
     if (horasRestantes < 1) {
       return { 
-        texto: `${minutosRestantes}min restantes`, 
+        texto: `${minutosRestantes}min ${segundosRestantes}s restantes`, 
         vencido: false,
         critico: true 
       };
     }
     
     return { 
-      texto: `${horasRestantes}h ${minutosRestantes}min restantes`, 
+      texto: `${horasRestantes}h ${minutosRestantes}min ${segundosRestantes}s restantes`, 
       vencido: false,
       critico: horasRestantes < 6 
     };
@@ -221,35 +232,6 @@ const Index = () => {
             </div>
             
             <div>
-              <Label className="text-sm text-gray-300">Data de Entrega</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600 mt-1",
-                      !dataEntrega && "text-gray-400"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {dataEntrega ? format(dataEntrega, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-600">
-                  <CalendarComponent
-                    mode="single"
-                    selected={dataEntrega}
-                    onSelect={setDataEntrega}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
               <Label htmlFor="descricao" className="text-sm text-gray-300">Descrição</Label>
               <Input
                 id="descricao"
@@ -259,7 +241,9 @@ const Index = () => {
                 placeholder="Descrição do pedido"
               />
             </div>
-            
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <Label htmlFor="valor" className="text-sm text-gray-300">Valor</Label>
               <div className="relative mt-1">
@@ -410,7 +394,6 @@ const Index = () => {
                           </div>
                           <p className="text-gray-300">{pedido.descricao}</p>
                           <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span>Entrega: {format(parseISO(pedido.dataEntrega), "dd/MM/yyyy", { locale: ptBR })}</span>
                             <span>Valor: {mostrarValor ? `R$ ${pedido.valor.toFixed(2)}` : '••••••'}</span>
                             <span>Criado: {format(parseISO(pedido.dataCriacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
                           </div>
