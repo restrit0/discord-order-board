@@ -96,13 +96,48 @@
   }
 }
 
-/* Custom animations for order system */
-@keyframes urgent-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+/* Animações personalizadas */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  50% {
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -115,6 +150,24 @@
   }
 }
 
+/* Classes de animação */
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.5s ease-out forwards;
+}
+
+/* Borda girando para pedidos urgentes */
 .urgent-animation {
   position: relative;
   overflow: hidden;
@@ -129,7 +182,7 @@
   bottom: -2px;
   background: conic-gradient(from 0deg, transparent, #ef4444, transparent);
   border-radius: inherit;
-  animation: spinning-border 2s linear infinite;
+  animation: spinning-border 3s linear infinite;
   z-index: -1;
 }
 
@@ -145,7 +198,7 @@
   z-index: -1;
 }
 
-/* Smooth transitions */
+/* Transições suaves */
 .transition-all {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -155,7 +208,7 @@
   transform: scale(1.02);
 }
 
-/* Glass effect for cards */
+/* Glass effect para cards */
 .glass-effect {
   backdrop-filter: blur(16px) saturate(180%);
   background-color: rgba(17, 25, 40, 0.75);

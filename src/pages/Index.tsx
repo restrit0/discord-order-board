@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, startOfMonth, isSameMonth, differenceInHours, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Eye, EyeOff, Plus, DollarSign, Package, Clock, AlertTriangle, CheckCircle, Timer, Phone, TrendingUp } from 'lucide-react';
+import { Eye, EyeOff, Plus, DollarSign, Package, Clock, AlertTriangle, CheckCircle, Timer, Phone, TrendingUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,7 +25,6 @@ interface Pedido {
 const Index = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [mostrarValor, setMostrarValor] = useState(true);
-  const [progressoAtual, setProgressoAtual] = useState(0);
   const [currentTime, setCurrentTime] = useState(new Date());
   
   // Estados do formulário
@@ -43,19 +43,11 @@ const Index = () => {
     'Outros'
   ];
 
-  // Animação da barra de progresso
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProgressoAtual((prev) => (prev >= 100 ? 0 : prev + 0.5));
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
   // Atualizar tempo atual a cada segundo
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000); // Atualiza a cada segundo
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -107,6 +99,29 @@ const Index = () => {
     return dados;
   };
 
+  // Formatação automática do WhatsApp
+  const formatarWhatsAppInput = (valor: string) => {
+    const apenasNumeros = valor.replace(/\D/g, '');
+    
+    if (apenasNumeros.length <= 2) {
+      return `(${apenasNumeros}`;
+    } else if (apenasNumeros.length <= 7) {
+      return `(${apenasNumeros.slice(0, 2)}) ${apenasNumeros.slice(2)}`;
+    } else {
+      return `(${apenasNumeros.slice(0, 2)}) ${apenasNumeros.slice(2, 7)}-${apenasNumeros.slice(7, 11)}`;
+    }
+  };
+
+  // Formatação automática do valor
+  const formatarValorInput = (valor: string) => {
+    const apenasNumeros = valor.replace(/\D/g, '');
+    const numero = parseFloat(apenasNumeros) / 100;
+    return numero.toLocaleString('pt-BR', { 
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
+    });
+  };
+
   const criarPedido = () => {
     if (!cliente || !whatsapp || !descricao || !valor) {
       toast({
@@ -117,12 +132,14 @@ const Index = () => {
       return;
     }
 
+    const valorNumerico = parseFloat(valor.replace(/\D/g, '')) / 100;
+
     const novoPedido: Pedido = {
       id: Date.now().toString(),
       cliente,
       whatsapp,
       descricao,
-      valor: parseFloat(valor),
+      valor: valorNumerico,
       status,
       dataCriacao: new Date().toISOString()
     };
@@ -156,7 +173,7 @@ const Index = () => {
   const getTempoRestante = (dataCriacao: string) => {
     const criacao = parseISO(dataCriacao);
     const agora = currentTime;
-    const prazoFinal = new Date(criacao.getTime() + (48 * 60 * 60 * 1000)); // 48 horas
+    const prazoFinal = new Date(criacao.getTime() + (48 * 60 * 60 * 1000));
     
     const horasRestantes = differenceInHours(prazoFinal, agora);
     const minutosRestantes = differenceInMinutes(prazoFinal, agora) % 60;
@@ -204,10 +221,8 @@ const Index = () => {
     }, {} as Record<string, Pedido[]>);
 
   const formatarWhatsApp = (numero: string) => {
-    // Remove todos os caracteres não numéricos
     const apenasNumeros = numero.replace(/\D/g, '');
     
-    // Formatar como (XX) XXXXX-XXXX
     if (apenasNumeros.length === 11) {
       return `(${apenasNumeros.slice(0, 2)}) ${apenasNumeros.slice(2, 7)}-${apenasNumeros.slice(7)}`;
     }
@@ -249,9 +264,23 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-black text-white relative">
+      {/* Background com grid */}
+      <div className="absolute inset-0 bg-black">
+        <div 
+          className="absolute inset-0 opacity-10" 
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '20px 20px'
+          }}
+        />
+      </div>
+
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-6">
+      <div className="relative bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
@@ -259,60 +288,66 @@ const Index = () => {
             </h1>
             <p className="text-gray-400 mt-1">Gerencie seus pedidos de forma profissional e eficiente</p>
           </div>
-          <div className="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-white to-gray-400 transition-all duration-100"
-              style={{ width: `${progressoAtual}%` }}
-            />
+          <div className="text-right">
+            <div className="text-white text-lg font-semibold">
+              {format(currentTime, "HH:mm:ss", { locale: ptBR })}
+            </div>
+            <div className="text-gray-400 text-sm">
+              {format(currentTime, "EEEE, dd/MM/yyyy", { locale: ptBR })}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="relative max-w-7xl mx-auto p-6 space-y-8">
         {/* Formulário de Criação */}
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 animate-fade-in">
           <h2 className="text-xl font-semibold mb-6 flex items-center">
             <Plus className="w-5 h-5 mr-2 text-green-400" />
             Novo Pedido
           </h2>
           
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
+            <div className="animate-slide-in-left">
               <Label htmlFor="cliente" className="text-sm text-gray-300 mb-2 block">Cliente</Label>
               <Input
                 id="cliente"
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="Nome do cliente"
+                className="bg-gray-800/70 border-gray-600 text-white transition-all duration-200 focus:bg-gray-800"
+                placeholder="Digite o nome do cliente"
               />
             </div>
             
-            <div>
+            <div className="animate-slide-in-right">
               <Label htmlFor="whatsapp" className="text-sm text-gray-300 mb-2 block">WhatsApp</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="whatsapp"
                   value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white pl-10"
+                  onChange={(e) => setWhatsapp(formatarWhatsAppInput(e.target.value))}
+                  className="bg-gray-800/70 border-gray-600 text-white pl-10 transition-all duration-200 focus:bg-gray-800"
                   placeholder="(11) 99999-9999"
+                  maxLength={15}
                 />
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
+            <div className="animate-slide-in-left" style={{ animationDelay: '0.1s' }}>
               <Label className="text-sm text-gray-300 mb-2 block">Descrição do Pedido</Label>
               <Select value={descricao} onValueChange={setDescricao}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Selecione o tipo de pedido" />
+                <SelectTrigger className="bg-gray-800/70 border-gray-600 text-white transition-all duration-200 hover:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-400" />
+                    <SelectValue placeholder="Selecione o tipo de pedido" />
+                  </div>
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectContent className="bg-gray-800 border-gray-600 z-50">
                   {opcoesProntas.map((opcao) => (
-                    <SelectItem key={opcao} value={opcao} className="text-white">
+                    <SelectItem key={opcao} value={opcao} className="text-white hover:bg-gray-700">
                       {opcao}
                     </SelectItem>
                   ))}
@@ -320,18 +355,19 @@ const Index = () => {
               </Select>
             </div>
             
-            <div>
+            <div className="animate-slide-in-right" style={{ animationDelay: '0.1s' }}>
               <Label htmlFor="valor" className="text-sm text-gray-300 mb-2 block">Valor (R$)</Label>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                   id="valor"
-                  type="number"
                   value={valor}
-                  onChange={(e) => setValor(e.target.value)}
-                  className="bg-gray-700 border-gray-600 text-white pl-10"
+                  onChange={(e) => {
+                    const valorFormatado = formatarValorInput(e.target.value);
+                    setValor(valorFormatado);
+                  }}
+                  className="bg-gray-800/70 border-gray-600 text-white pl-10 transition-all duration-200 focus:bg-gray-800"
                   placeholder="0,00"
-                  step="0.01"
                 />
               </div>
             </div>
@@ -339,7 +375,7 @@ const Index = () => {
             
           <Button 
             onClick={criarPedido}
-            className="w-full h-12 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+            className="w-full h-12 bg-gradient-to-r from-gray-600 to-white hover:from-gray-700 hover:to-gray-100 text-black font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] animate-scale-in"
           >
             <Plus className="w-5 h-5 mr-2" />
             ✨ Criar Novo Pedido
@@ -350,7 +386,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Estatísticas */}
           <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-600 rounded-xl p-6 text-white border border-gray-600">
+            <div className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-xl p-6 text-white border border-gray-600 animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-300">Total de Pedidos</p>
@@ -360,7 +396,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-xl p-6 text-white border border-yellow-400">
+            <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 rounded-xl p-6 text-white border border-yellow-400 animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-yellow-100">Pendentes</p>
@@ -370,7 +406,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-red-600 to-red-500 rounded-xl p-6 text-white border border-red-400">
+            <div className="bg-gradient-to-r from-red-600 to-red-500 rounded-xl p-6 text-white border border-red-400 animate-fade-in" style={{ animationDelay: '0.2s' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-red-100">Urgentes</p>
@@ -380,7 +416,7 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-xl p-6 text-white border border-green-400">
+            <div className="bg-gradient-to-r from-green-600 to-green-500 rounded-xl p-6 text-white border border-green-400 animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100">Valor Total</p>
@@ -402,7 +438,7 @@ const Index = () => {
           </div>
 
           {/* Gráfico de Linha */}
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-5 h-5 text-white" />
               <h3 className="text-lg font-semibold">Pedidos (7 dias)</h3>
@@ -430,7 +466,7 @@ const Index = () => {
         </div>
 
         {/* Lista de Pedidos */}
-        <div className="space-y-6">
+        <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
           <h2 className="text-2xl font-semibold">Lista de Pedidos</h2>
           
           {Object.entries(pedidosOrganizados).map(([mesAno, pedidosDoMes]) => (
@@ -438,7 +474,7 @@ const Index = () => {
               <h3 className="text-lg font-medium text-gray-300 capitalize">{mesAno}</h3>
               
               <div className="grid gap-4">
-                {pedidosDoMes.map((pedido) => {
+                {pedidosDoMes.map((pedido, index) => {
                   const tempoInfo = getTempoRestante(pedido.dataCriacao);
                   const isUrgente = pedido.status === 'Urgente';
                   
@@ -446,11 +482,12 @@ const Index = () => {
                     <div
                       key={pedido.id}
                       className={cn(
-                        "bg-gray-800 rounded-xl p-6 transition-all duration-300 hover:bg-gray-750",
+                        "bg-gray-900/50 backdrop-blur-sm rounded-xl p-6 transition-all duration-300 hover:bg-gray-800/50 animate-fade-in",
                         isUrgente 
-                          ? "border-2 border-red-500/70 shadow-lg shadow-red-500/20 bg-gradient-to-r from-gray-800 to-red-900/20" 
+                          ? "urgent-animation border-2 border-red-500/70 shadow-lg shadow-red-500/20" 
                           : "border border-gray-700"
                       )}
+                      style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="space-y-3">
@@ -473,14 +510,14 @@ const Index = () => {
                           </div>
                           
                           <div className="flex items-center gap-4">
-                            <span className="bg-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                            <span className="bg-gray-700/70 px-3 py-1 rounded-full text-sm font-medium">
                               📋 {pedido.descricao}
                             </span>
                             <a 
                               href={`https://wa.me/55${pedido.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-full text-sm font-medium transition-colors flex items-center gap-1"
+                              className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded-full text-sm font-medium transition-colors flex items-center gap-1 hover:scale-105 transform duration-200"
                             >
                               <Phone className="w-3 h-3" />
                               {formatarWhatsApp(pedido.whatsapp)}
@@ -498,23 +535,23 @@ const Index = () => {
                             value={pedido.status}
                             onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => alterarStatus(pedido.id, value)}
                           >
-                            <SelectTrigger className="w-36 bg-gray-700 border-gray-600 text-white">
+                            <SelectTrigger className="w-36 bg-gray-800/70 border-gray-600 text-white">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-gray-800 border-gray-600">
-                              <SelectItem value="Pendente" className="text-white">
+                            <SelectContent className="bg-gray-800 border-gray-600 z-40">
+                              <SelectItem value="Pendente" className="text-white hover:bg-gray-700">
                                 <div className="flex items-center">
                                   <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
                                   Pendente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Urgente" className="text-white">
+                              <SelectItem value="Urgente" className="text-white hover:bg-gray-700">
                                 <div className="flex items-center">
                                   <div className="w-2 h-2 bg-red-500 rounded-full mr-2" />
                                   Urgente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Finalizado" className="text-white">
+                              <SelectItem value="Finalizado" className="text-white hover:bg-gray-700">
                                 <div className="flex items-center">
                                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
                                   Finalizado
@@ -532,7 +569,7 @@ const Index = () => {
           ))}
           
           {pedidos.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-12 animate-fade-in">
               <Package className="w-16 h-16 text-gray-600 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">Nenhum pedido cadastrado ainda</p>
               <p className="text-gray-500">Crie seu primeiro pedido usando o formulário acima</p>
