@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { format, parseISO, startOfMonth, isSameMonth, differenceInHours, differenceInMinutes, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -33,13 +34,16 @@ const Index = () => {
   const [valor, setValor] = useState('');
   const [status, setStatus] = useState<'Pendente' | 'Urgente' | 'Finalizado'>('Pendente');
 
-  // Opções pré-definidas para descrição
-  const opcoesProntas = [
-    'Flyer',
-    'Vídeo 15 segundos',
-    'Vídeo 30 segundos',
-    'Logotipo',
-    'Outros'
+  // Opções pré-definidas para descrição com valores
+  const opcoesProdutos = [
+    { nome: 'FLYER ESTÁTICO', valor: 70 },
+    { nome: 'VÍDEO "REELS" 15 SEG.', valor: 110 },
+    { nome: 'VÍDEO "REELS" 30 SEG.', valor: 130 },
+    { nome: 'VÍDEO "REELS" 15 SEG. + FLYER FEED/STORIES', valor: 150 },
+    { nome: 'VÍDEO "REELS" 30 SEG. + FLYER FEED/STORIES', valor: 170 },
+    { nome: 'LOGOTIPO', valor: 230 },
+    { nome: 'CARROSEL PRA FEED', valor: 110 },
+    { nome: 'Outros', valor: 0 }
   ];
 
   // Atualizar tempo atual a cada segundo
@@ -121,6 +125,25 @@ const Index = () => {
     });
   };
 
+  // Função para lidar com mudança da descrição
+  const handleDescricaoChange = (novaDescricao: string) => {
+    setDescricao(novaDescricao);
+    
+    // Encontrar o produto selecionado
+    const produtoSelecionado = opcoesProdutos.find(p => p.nome === novaDescricao);
+    
+    if (produtoSelecionado && produtoSelecionado.valor > 0) {
+      // Formatar o valor automaticamente
+      setValor(produtoSelecionado.valor.toLocaleString('pt-BR', { 
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2 
+      }));
+    } else if (novaDescricao === 'Outros') {
+      // Limpar o valor para permitir digitação manual
+      setValor('');
+    }
+  };
+
   const criarPedido = () => {
     if (!cliente || !whatsapp || !descricao || !valor) {
       toast({
@@ -153,7 +176,7 @@ const Index = () => {
     setStatus('Pendente');
 
     toast({
-      title: "🎉 Pedido criado com sucesso!",
+      title: "Pedido criado com sucesso!",
       description: `Pedido para ${cliente} foi adicionado ao sistema.`,
     });
   };
@@ -239,9 +262,9 @@ const Index = () => {
         );
       case 'Urgente': 
         return (
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/30 text-red-300 rounded-full border-2 border-red-500/60 font-bold shadow-lg shadow-red-500/25">
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/30 text-red-300 rounded-full border border-red-500/60 font-bold">
             <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-sm">🔥 URGENTE</span>
+            <span className="text-sm">URGENTE</span>
           </div>
         );
       case 'Finalizado': 
@@ -263,38 +286,33 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-black text-white relative overflow-hidden">
-      {/* Futuristic Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-purple-900/5 to-cyan-900/5" />
-        <div 
-          className="absolute inset-0 opacity-[0.02]" 
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 25% 25%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-              radial-gradient(circle at 75% 75%, rgba(56, 189, 248, 0.3) 0%, transparent 50%),
-              linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.1) 42%, transparent 44%),
-              linear-gradient(-45deg, transparent 40%, rgba(255,255,255,0.1) 42%, transparent 44%)
-            `,
-            backgroundSize: '400px 400px, 300px 300px, 60px 60px, 60px 60px'
-          }}
-        />
-      </div>
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Grid Background */}
+      <div 
+        className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `
+            linear-gradient(rgba(64, 64, 64, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(64, 64, 64, 0.3) 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px'
+        }}
+      />
 
       {/* Header */}
-      <div className="relative bg-gradient-to-r from-slate-900/80 via-gray-900/80 to-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl">
+      <div className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50 shadow-2xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center p-6">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent">
               Sistema de Pedidos
             </h1>
-            <p className="text-slate-400 mt-2 font-medium">Gerencie seus pedidos de forma profissional e eficiente</p>
+            <p className="text-gray-400 mt-2 font-medium">Gerencie seus pedidos de forma profissional e eficiente</p>
           </div>
-          <div className="text-right bg-slate-800/50 rounded-xl px-6 py-3 border border-slate-600/50 backdrop-blur-sm">
+          <div className="text-right bg-gray-800/50 rounded-xl px-6 py-3 border border-gray-600/50 backdrop-blur-sm">
             <div className="text-white text-xl font-bold font-mono">
               {format(currentTime, "HH:mm:ss", { locale: ptBR })}
             </div>
-            <div className="text-slate-300 text-sm font-medium">
+            <div className="text-gray-300 text-sm font-medium">
               {format(currentTime, "EEEE, dd/MM/yyyy", { locale: ptBR })}
             </div>
           </div>
@@ -303,9 +321,9 @@ const Index = () => {
 
       <div className="relative max-w-7xl mx-auto p-6 space-y-8">
         {/* Formulário de Criação */}
-        <div className="bg-gradient-to-br from-slate-800/40 via-gray-800/40 to-slate-900/40 backdrop-blur-xl rounded-2xl p-8 border border-slate-600/30 shadow-2xl animate-fade-in">
-          <h2 className="text-2xl font-bold mb-8 flex items-center bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center mr-3">
+        <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 shadow-2xl animate-fade-in">
+          <h2 className="text-2xl font-bold mb-8 flex items-center bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center mr-3">
               <Plus className="w-4 h-4 text-white" />
             </div>
             Novo Pedido
@@ -313,25 +331,25 @@ const Index = () => {
           
           <div className="grid grid-cols-2 gap-6 mb-6">
             <div className="animate-slide-in-left space-y-3">
-              <Label htmlFor="cliente" className="text-sm text-slate-300 font-semibold block">Cliente</Label>
+              <Label htmlFor="cliente" className="text-sm text-gray-300 font-semibold block">Cliente</Label>
               <Input
                 id="cliente"
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
-                className="bg-slate-800/50 border-slate-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-slate-700/50 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30"
+                className="bg-gray-800/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
                 placeholder="Digite o nome do cliente"
               />
             </div>
             
             <div className="animate-slide-in-right space-y-3">
-              <Label htmlFor="whatsapp" className="text-sm text-slate-300 font-semibold block">WhatsApp</Label>
+              <Label htmlFor="whatsapp" className="text-sm text-gray-300 font-semibold block">WhatsApp</Label>
               <div className="relative">
-                <Phone className="absolute left-4 top-4 h-4 w-4 text-slate-400" />
+                <Phone className="absolute left-4 top-4 h-4 w-4 text-gray-400" />
                 <Input
                   id="whatsapp"
                   value={whatsapp}
-                  onChange={(e) => setWhatsApp(formatarWhatsAppInput(e.target.value))}
-                  className="bg-slate-800/50 border-slate-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-slate-700/50 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30"
+                  onChange={(e) => setWhatsapp(formatarWhatsAppInput(e.target.value))}
+                  className="bg-gray-800/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                 />
@@ -341,19 +359,19 @@ const Index = () => {
 
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div className="animate-slide-in-left space-y-3" style={{ animationDelay: '0.1s' }}>
-              <Label className="text-sm text-slate-300 font-semibold block">Descrição do Pedido</Label>
-              <Select value={descricao} onValueChange={setDescricao}>
-                <SelectTrigger className="bg-slate-800/50 border-slate-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-slate-700/50 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30">
+              <Label className="text-sm text-gray-300 font-semibold block">Descrição do Pedido</Label>
+              <Select value={descricao} onValueChange={handleDescricaoChange}>
+                <SelectTrigger className="bg-gray-800/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30">
                   <div className="flex items-center gap-3">
-                    <Package className="w-4 h-4 text-slate-400" />
+                    <Package className="w-4 h-4 text-gray-400" />
                     <SelectValue placeholder="Selecione o tipo de pedido" />
-                    <ChevronDown className="w-4 h-4 text-slate-400 ml-auto" />
+                    <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800/95 border-slate-600/50 backdrop-blur-xl rounded-xl">
-                  {opcoesProntas.map((opcao) => (
-                    <SelectItem key={opcao} value={opcao} className="text-white hover:bg-slate-700/50 rounded-lg">
-                      {opcao}
+                <SelectContent className="bg-gray-800/95 border-gray-600/50 backdrop-blur-xl rounded-xl">
+                  {opcoesProdutos.map((produto) => (
+                    <SelectItem key={produto.nome} value={produto.nome} className="text-white hover:bg-gray-700/50 rounded-lg">
+                      {produto.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -361,17 +379,20 @@ const Index = () => {
             </div>
             
             <div className="animate-slide-in-right space-y-3" style={{ animationDelay: '0.1s' }}>
-              <Label htmlFor="valor" className="text-sm text-slate-300 font-semibold block">Valor (R$)</Label>
+              <Label htmlFor="valor" className="text-sm text-gray-300 font-semibold block">Valor (R$)</Label>
               <div className="relative">
-                <DollarSign className="absolute left-4 top-4 h-4 w-4 text-slate-400" />
+                <DollarSign className="absolute left-4 top-4 h-4 w-4 text-gray-400" />
                 <Input
                   id="valor"
                   value={valor}
                   onChange={(e) => {
-                    const valorFormatado = formatarValorInput(e.target.value);
-                    setValor(valorFormatado);
+                    if (descricao === 'Outros' || descricao === '') {
+                      const valorFormatado = formatarValorInput(e.target.value);
+                      setValor(valorFormatado);
+                    }
                   }}
-                  className="bg-slate-800/50 border-slate-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-slate-700/50 focus:border-blue-400/50 focus:ring-1 focus:ring-blue-400/30"
+                  disabled={descricao !== 'Outros' && descricao !== ''}
+                  className="bg-gray-800/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30 disabled:opacity-70"
                   placeholder="0,00"
                 />
               </div>
@@ -380,7 +401,7 @@ const Index = () => {
             
           <Button 
             onClick={criarPedido}
-            className="w-full h-14 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-700 hover:via-blue-600 hover:to-cyan-600 text-white font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] animate-scale-in rounded-xl border-0"
+            className="w-full h-14 bg-gradient-to-r from-gray-600 to-white text-black font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] animate-scale-in rounded-xl border-0 hover:from-gray-700 hover:to-gray-100"
           >
             <Plus className="w-5 h-5 mr-2" />
             Criar Novo Pedido
@@ -391,13 +412,13 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Estatísticas */}
           <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl animate-fade-in">
+            <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 font-semibold">Total de Pedidos</p>
+                  <p className="text-gray-400 font-semibold">Total de Pedidos</p>
                   <p className="text-3xl font-bold text-white mt-1">{totalPedidos}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center">
                   <Package className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -427,10 +448,10 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-emerald-900/60 to-green-900/60 backdrop-blur-xl rounded-2xl p-6 border border-emerald-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <div className="bg-gradient-to-br from-gray-700/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-emerald-200 font-semibold">Valor Total</p>
+                  <p className="text-gray-300 font-semibold">Valor Total</p>
                   <p className="text-3xl font-bold text-white mt-1">
                     {mostrarValor ? `R$ ${valorTotal.toFixed(2)}` : '••••••'}
                   </p>
@@ -439,7 +460,7 @@ const Index = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-emerald-200 hover:text-white hover:bg-emerald-700/50 h-12 w-12 p-0 rounded-xl transition-all"
+                  className="text-gray-300 hover:text-white hover:bg-gray-700/50 h-12 w-12 p-0 rounded-xl transition-all"
                   onClick={() => setMostrarValor(!mostrarValor)}
                 >
                   {mostrarValor ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
@@ -449,9 +470,9 @@ const Index = () => {
           </div>
 
           {/* Gráfico de Linha */}
-          <div className="bg-gradient-to-br from-slate-800/60 to-gray-900/60 backdrop-blur-xl rounded-2xl p-6 border border-slate-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-lg font-bold text-white">Pedidos (7 dias)</h3>
@@ -460,7 +481,7 @@ const Index = () => {
               <LineChart data={gerarDadosGrafico()}>
                 <XAxis 
                   dataKey="data" 
-                  tick={{ fontSize: 12, fill: '#94A3B8' }}
+                  tick={{ fontSize: 12, fill: '#9CA3AF' }}
                   axisLine={false}
                   tickLine={false}
                 />
@@ -471,12 +492,12 @@ const Index = () => {
                   dataKey="pedidos" 
                   stroke="url(#gradient)" 
                   strokeWidth={3}
-                  dot={{ fill: '#06B6D4', strokeWidth: 2, r: 5 }}
+                  dot={{ fill: '#9CA3AF', strokeWidth: 2, r: 5 }}
                 />
                 <defs>
                   <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#06B6D4" />
-                    <stop offset="100%" stopColor="#3B82F6" />
+                    <stop offset="0%" stopColor="#9CA3AF" />
+                    <stop offset="100%" stopColor="#6B7280" />
                   </linearGradient>
                 </defs>
               </LineChart>
@@ -486,11 +507,11 @@ const Index = () => {
 
         {/* Lista de Pedidos */}
         <div className="space-y-6 animate-fade-in" style={{ animationDelay: '0.5s' }}>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Lista de Pedidos</h2>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Lista de Pedidos</h2>
           
           {Object.entries(pedidosOrganizados).map(([mesAno, pedidosDoMes]) => (
             <div key={mesAno} className="space-y-4">
-              <h3 className="text-xl font-semibold text-slate-300 capitalize bg-gradient-to-r from-slate-300 to-slate-400 bg-clip-text text-transparent">{mesAno}</h3>
+              <h3 className="text-xl font-semibold text-gray-300 capitalize bg-gradient-to-r from-gray-300 to-gray-400 bg-clip-text text-transparent">{mesAno}</h3>
               
               <div className="grid gap-4">
                 {pedidosDoMes.map((pedido, index) => {
@@ -501,10 +522,10 @@ const Index = () => {
                     <div
                       key={pedido.id}
                       className={cn(
-                        "bg-gradient-to-br from-slate-800/50 via-gray-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 hover:from-slate-700/60 hover:via-gray-700/60 hover:to-slate-800/60 animate-fade-in shadow-xl",
+                        "bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 hover:bg-gray-700/60 animate-fade-in shadow-xl",
                         isUrgente 
-                          ? "border-2 border-red-500/70 shadow-red-500/20" 
-                          : "border border-slate-600/30"
+                          ? "border border-red-500/60" 
+                          : "border border-gray-600/30"
                       )}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
@@ -520,7 +541,7 @@ const Index = () => {
                                   ? "bg-red-900/50 text-red-300 border-red-500/50"
                                   : tempoInfo.critico
                                   ? "bg-orange-900/50 text-orange-300 border-orange-500/50"
-                                  : "bg-blue-900/50 text-blue-300 border-blue-500/50"
+                                  : "bg-gray-900/50 text-gray-300 border-gray-500/50"
                               )}>
                                 <Timer className="w-4 h-4" />
                                 <span className="font-mono">{tempoInfo.texto}</span>
@@ -529,7 +550,7 @@ const Index = () => {
                           </div>
                           
                           <div className="flex items-center gap-4">
-                            <span className="bg-slate-700/70 backdrop-blur-sm px-4 py-2 rounded-xl text-sm font-semibold border border-slate-600/50">
+                            <span className="bg-gray-700/70 backdrop-blur-sm px-4 py-2 rounded-xl text-sm font-semibold border border-gray-600/50">
                               {pedido.descricao}
                             </span>
                             <a 
@@ -543,7 +564,7 @@ const Index = () => {
                             </a>
                           </div>
                           
-                          <div className="flex items-center gap-6 text-sm text-slate-400 font-medium">
+                          <div className="flex items-center gap-6 text-sm text-gray-400 font-medium">
                             <span className="flex items-center gap-2">
                               <DollarSign className="w-4 h-4" />
                               {mostrarValor ? `R$ ${pedido.valor.toFixed(2)}` : '••••••'}
@@ -560,23 +581,23 @@ const Index = () => {
                             value={pedido.status}
                             onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => alterarStatus(pedido.id, value)}
                           >
-                            <SelectTrigger className="w-40 bg-slate-800/70 border-slate-600/50 text-white h-12 rounded-xl backdrop-blur-sm">
+                            <SelectTrigger className="w-40 bg-gray-800/70 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-slate-800/95 border-slate-600/50 backdrop-blur-xl rounded-xl">
-                              <SelectItem value="Pendente" className="text-white hover:bg-slate-700/50 rounded-lg">
+                            <SelectContent className="bg-gray-800/95 border-gray-600/50 backdrop-blur-xl rounded-xl">
+                              <SelectItem value="Pendente" className="text-white hover:bg-gray-700/50 rounded-lg">
                                 <div className="flex items-center">
                                   <div className="w-3 h-3 bg-amber-500 rounded-full mr-3" />
                                   Pendente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Urgente" className="text-white hover:bg-slate-700/50 rounded-lg">
+                              <SelectItem value="Urgente" className="text-white hover:bg-gray-700/50 rounded-lg">
                                 <div className="flex items-center">
                                   <div className="w-3 h-3 bg-red-500 rounded-full mr-3" />
                                   Urgente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Finalizado" className="text-white hover:bg-slate-700/50 rounded-lg">
+                              <SelectItem value="Finalizado" className="text-white hover:bg-gray-700/50 rounded-lg">
                                 <div className="flex items-center">
                                   <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3" />
                                   Finalizado
@@ -595,11 +616,11 @@ const Index = () => {
           
           {pedidos.length === 0 && (
             <div className="text-center py-16 animate-fade-in">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-slate-700 to-gray-700 flex items-center justify-center mx-auto mb-6">
-                <Package className="w-12 h-12 text-slate-400" />
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center mx-auto mb-6">
+                <Package className="w-12 h-12 text-gray-400" />
               </div>
-              <p className="text-slate-300 text-xl font-semibold mb-2">Nenhum pedido cadastrado ainda</p>
-              <p className="text-slate-500">Crie seu primeiro pedido usando o formulário acima</p>
+              <p className="text-gray-300 text-xl font-semibold mb-2">Nenhum pedido cadastrado ainda</p>
+              <p className="text-gray-500">Crie seu primeiro pedido usando o formulário acima</p>
             </div>
           )}
         </div>
