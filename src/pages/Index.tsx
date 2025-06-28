@@ -20,6 +20,7 @@ interface Pedido {
   valor: number;
   status: 'Pendente' | 'Urgente' | 'Finalizado';
   dataCriacao: string;
+  dataFinalizacao?: string;
 }
 
 const Index = () => {
@@ -78,7 +79,7 @@ const Index = () => {
   const pedidosUrgentes = pedidos.filter(p => p.status === 'Urgente').length;
   const valorTotal = pedidos.reduce((total, p) => total + p.valor, 0);
 
-  // Dados para o gráfico de linha (últimos 7 dias)
+  // Dados para o gráfico de linha (últimos 7 dias) com cores mais vibrantes
   const gerarDadosGrafico = () => {
     const hoje = new Date();
     const dados = [];
@@ -163,7 +164,8 @@ const Index = () => {
       descricao,
       valor: valorNumerico,
       status,
-      dataCriacao: new Date().toISOString()
+      dataCriacao: new Date().toISOString(),
+      ...(status === 'Finalizado' && { dataFinalizacao: new Date().toISOString() })
     };
 
     setPedidos(prev => [...prev, novoPedido]);
@@ -183,7 +185,24 @@ const Index = () => {
 
   const alterarStatus = (id: string, novoStatus: 'Pendente' | 'Urgente' | 'Finalizado') => {
     setPedidos(prev => 
-      prev.map(p => p.id === id ? { ...p, status: novoStatus } : p)
+      prev.map(p => {
+        if (p.id === id) {
+          const pedidoAtualizado = { ...p, status: novoStatus };
+          
+          // Adicionar data de finalização se o status for Finalizado
+          if (novoStatus === 'Finalizado' && !p.dataFinalizacao) {
+            pedidoAtualizado.dataFinalizacao = new Date().toISOString();
+          }
+          
+          // Remover data de finalização se não for mais Finalizado
+          if (novoStatus !== 'Finalizado' && p.dataFinalizacao) {
+            delete pedidoAtualizado.dataFinalizacao;
+          }
+          
+          return pedidoAtualizado;
+        }
+        return p;
+      })
     );
     
     toast({
@@ -281,26 +300,26 @@ const Index = () => {
   const chartConfig = {
     pedidos: {
       label: "Pedidos",
-      color: "#ffffff",
+      color: "#22d3ee",
     },
   };
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gray-800 text-white relative overflow-hidden">
       {/* Grid Background */}
       <div 
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-30"
         style={{
           backgroundImage: `
-            linear-gradient(rgba(64, 64, 64, 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(64, 64, 64, 0.3) 1px, transparent 1px)
+            linear-gradient(rgba(156, 163, 175, 0.4) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(156, 163, 175, 0.4) 1px, transparent 1px)
           `,
           backgroundSize: '20px 20px'
         }}
       />
 
       {/* Header */}
-      <div className="relative bg-gray-900/80 backdrop-blur-xl border-b border-gray-700/50 shadow-2xl">
+      <div className="relative bg-gray-700/60 backdrop-blur-xl border-b border-gray-600/50 shadow-2xl">
         <div className="max-w-7xl mx-auto flex justify-between items-center p-6">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-gray-100 to-gray-200 bg-clip-text text-transparent">
@@ -308,7 +327,7 @@ const Index = () => {
             </h1>
             <p className="text-gray-400 mt-2 font-medium">Gerencie seus pedidos de forma profissional e eficiente</p>
           </div>
-          <div className="text-right bg-gray-800/50 rounded-xl px-6 py-3 border border-gray-600/50 backdrop-blur-sm">
+          <div className="text-right bg-gray-700/50 rounded-xl px-6 py-3 border border-gray-600/50 backdrop-blur-sm">
             <div className="text-white text-xl font-bold font-mono">
               {format(currentTime, "HH:mm:ss", { locale: ptBR })}
             </div>
@@ -321,9 +340,9 @@ const Index = () => {
 
       <div className="relative max-w-7xl mx-auto p-6 space-y-8">
         {/* Formulário de Criação */}
-        <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 shadow-2xl animate-fade-in">
+        <div className="bg-gray-700/60 backdrop-blur-xl rounded-2xl p-8 border border-gray-600/30 shadow-2xl animate-fade-in">
           <h2 className="text-2xl font-bold mb-8 flex items-center bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center mr-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-600 to-gray-500 flex items-center justify-center mr-3">
               <Plus className="w-4 h-4 text-white" />
             </div>
             Novo Pedido
@@ -336,7 +355,7 @@ const Index = () => {
                 id="cliente"
                 value={cliente}
                 onChange={(e) => setCliente(e.target.value)}
-                className="bg-gray-800/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
+                className="bg-gray-700/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-600/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
                 placeholder="Digite o nome do cliente"
               />
             </div>
@@ -349,7 +368,7 @@ const Index = () => {
                   id="whatsapp"
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(formatarWhatsAppInput(e.target.value))}
-                  className="bg-gray-800/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
+                  className="bg-gray-700/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-600/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30"
                   placeholder="(11) 99999-9999"
                   maxLength={15}
                 />
@@ -357,20 +376,20 @@ const Index = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-3 gap-6 mb-8">
             <div className="animate-slide-in-left space-y-3" style={{ animationDelay: '0.1s' }}>
               <Label className="text-sm text-gray-300 font-semibold block">Descrição do Pedido</Label>
               <Select value={descricao} onValueChange={handleDescricaoChange}>
-                <SelectTrigger className="bg-gray-800/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30">
+                <SelectTrigger className="bg-gray-700/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-gray-600/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30">
                   <div className="flex items-center gap-3">
                     <Package className="w-4 h-4 text-gray-400" />
                     <SelectValue placeholder="Selecione o tipo de pedido" />
                     <ChevronDown className="w-4 h-4 text-gray-400 ml-auto" />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800/95 border-gray-600/50 backdrop-blur-xl rounded-xl">
+                <SelectContent className="bg-gray-700/95 border-gray-600/50 backdrop-blur-xl rounded-xl z-50">
                   {opcoesProdutos.map((produto) => (
-                    <SelectItem key={produto.nome} value={produto.nome} className="text-white hover:bg-gray-700/50 rounded-lg">
+                    <SelectItem key={produto.nome} value={produto.nome} className="text-white hover:bg-gray-600/50 rounded-lg">
                       {produto.nome}
                     </SelectItem>
                   ))}
@@ -392,16 +411,45 @@ const Index = () => {
                     }
                   }}
                   disabled={descricao !== 'Outros' && descricao !== ''}
-                  className="bg-gray-800/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-700/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30 disabled:opacity-70"
+                  className="bg-gray-700/50 border-gray-600/50 text-white pl-12 h-12 rounded-xl backdrop-blur-sm transition-all duration-300 focus:bg-gray-600/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30 disabled:opacity-70"
                   placeholder="0,00"
                 />
               </div>
+            </div>
+
+            <div className="animate-slide-in-right space-y-3" style={{ animationDelay: '0.2s' }}>
+              <Label className="text-sm text-gray-300 font-semibold block">Status</Label>
+              <Select value={status} onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => setStatus(value)}>
+                <SelectTrigger className="bg-gray-700/50 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm transition-all duration-300 hover:bg-gray-600/50 focus:border-gray-400/50 focus:ring-1 focus:ring-gray-400/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-700/95 border-gray-600/50 backdrop-blur-xl rounded-xl z-50">
+                  <SelectItem value="Pendente" className="text-white hover:bg-gray-600/50 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3" />
+                      Pendente
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Urgente" className="text-white hover:bg-gray-600/50 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-red-500 rounded-full mr-3" />
+                      Urgente
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Finalizado" className="text-white hover:bg-gray-600/50 rounded-lg">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-3" />
+                      Finalizado
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
             
           <Button 
             onClick={criarPedido}
-            className="w-full h-14 bg-gradient-to-r from-gray-600 to-white text-black font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] animate-scale-in rounded-xl border-0 hover:from-gray-700 hover:to-gray-100"
+            className="w-full h-14 bg-gradient-to-r from-gray-600 via-gray-500 to-gray-400 hover:from-gray-700 hover:via-gray-600 hover:to-gray-500 text-white font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.01] animate-scale-in rounded-xl border-0"
           >
             <Plus className="w-5 h-5 mr-2" />
             Criar Novo Pedido
@@ -412,25 +460,25 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Estatísticas */}
           <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in">
+            <div className="bg-gray-700/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 font-semibold">Total de Pedidos</p>
                   <p className="text-3xl font-bold text-white mt-1">{totalPedidos}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-gray-600 to-gray-500 flex items-center justify-center">
                   <Package className="w-6 h-6 text-white" />
                 </div>
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-amber-900/60 to-orange-900/60 backdrop-blur-xl rounded-2xl p-6 border border-amber-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            <div className="bg-gradient-to-br from-yellow-900/60 to-orange-900/60 backdrop-blur-xl rounded-2xl p-6 border border-yellow-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-200 font-semibold">Pendentes</p>
+                  <p className="text-yellow-200 font-semibold">Pendentes</p>
                   <p className="text-3xl font-bold text-white mt-1">{pedidosPendentes}</p>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center">
                   <Clock className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -448,11 +496,11 @@ const Index = () => {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-gray-700/60 to-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            <div className="bg-gradient-to-br from-cyan-900/60 to-teal-900/60 backdrop-blur-xl rounded-2xl p-6 border border-cyan-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-300 font-semibold">Valor Total</p>
-                  <p className="text-3xl font-bold text-white mt-1">
+                  <p className="text-cyan-200 font-semibold">Valor Total</p>
+                  <p className="text-3xl font-bold text-cyan-400 mt-1">
                     {mostrarValor ? `R$ ${valorTotal.toFixed(2)}` : '••••••'}
                   </p>
                 </div>
@@ -460,7 +508,7 @@ const Index = () => {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-gray-300 hover:text-white hover:bg-gray-700/50 h-12 w-12 p-0 rounded-xl transition-all"
+                  className="text-cyan-300 hover:text-white hover:bg-cyan-700/50 h-12 w-12 p-0 rounded-xl transition-all"
                   onClick={() => setMostrarValor(!mostrarValor)}
                 >
                   {mostrarValor ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
@@ -470,9 +518,9 @@ const Index = () => {
           </div>
 
           {/* Gráfico de Linha */}
-          <div className="bg-gray-800/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="bg-gray-700/60 backdrop-blur-xl rounded-2xl p-6 border border-gray-600/30 shadow-xl animate-fade-in" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-500 to-gray-400 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-teal-500 flex items-center justify-center">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <h3 className="text-lg font-bold text-white">Pedidos (7 dias)</h3>
@@ -490,16 +538,10 @@ const Index = () => {
                 <Line 
                   type="monotone" 
                   dataKey="pedidos" 
-                  stroke="url(#gradient)" 
+                  stroke="#22d3ee" 
                   strokeWidth={3}
-                  dot={{ fill: '#9CA3AF', strokeWidth: 2, r: 5 }}
+                  dot={{ fill: '#22d3ee', strokeWidth: 2, r: 5 }}
                 />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#9CA3AF" />
-                    <stop offset="100%" stopColor="#6B7280" />
-                  </linearGradient>
-                </defs>
               </LineChart>
             </ChartContainer>
           </div>
@@ -522,7 +564,7 @@ const Index = () => {
                     <div
                       key={pedido.id}
                       className={cn(
-                        "bg-gray-800/50 backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 hover:bg-gray-700/60 animate-fade-in shadow-xl",
+                        "bg-gray-700/50 backdrop-blur-xl rounded-2xl p-6 transition-all duration-300 hover:bg-gray-600/60 animate-fade-in shadow-xl",
                         isUrgente 
                           ? "border border-red-500/60" 
                           : "border border-gray-600/30"
@@ -536,12 +578,12 @@ const Index = () => {
                             {getStatusBadge(pedido.status)}
                             {pedido.status !== 'Finalizado' && (
                               <div className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold backdrop-blur-sm",
+                                "flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-semibold backdrop-blur-sm",
                                 tempoInfo.vencido 
                                   ? "bg-red-900/50 text-red-300 border-red-500/50"
                                   : tempoInfo.critico
                                   ? "bg-orange-900/50 text-orange-300 border-orange-500/50"
-                                  : "bg-gray-900/50 text-gray-300 border-gray-500/50"
+                                  : "bg-gray-800/50 text-gray-300 border-gray-500/50"
                               )}>
                                 <Timer className="w-4 h-4" />
                                 <span className="font-mono">{tempoInfo.texto}</span>
@@ -550,7 +592,7 @@ const Index = () => {
                           </div>
                           
                           <div className="flex items-center gap-4">
-                            <span className="bg-gray-700/70 backdrop-blur-sm px-4 py-2 rounded-xl text-sm font-semibold border border-gray-600/50">
+                            <span className="bg-gray-600/70 backdrop-blur-sm px-4 py-2 rounded-xl text-sm font-semibold border border-gray-500/50">
                               {pedido.descricao}
                             </span>
                             <a 
@@ -571,8 +613,14 @@ const Index = () => {
                             </span>
                             <span className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              {format(parseISO(pedido.dataCriacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              Criado: {format(parseISO(pedido.dataCriacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </span>
+                            {pedido.dataFinalizacao && (
+                              <span className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                Finalizado: {format(parseISO(pedido.dataFinalizacao), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                              </span>
+                            )}
                           </div>
                         </div>
                         
@@ -581,25 +629,25 @@ const Index = () => {
                             value={pedido.status}
                             onValueChange={(value: 'Pendente' | 'Urgente' | 'Finalizado') => alterarStatus(pedido.id, value)}
                           >
-                            <SelectTrigger className="w-40 bg-gray-800/70 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm">
+                            <SelectTrigger className="w-40 bg-gray-700/70 border-gray-600/50 text-white h-12 rounded-xl backdrop-blur-sm">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-gray-800/95 border-gray-600/50 backdrop-blur-xl rounded-xl">
-                              <SelectItem value="Pendente" className="text-white hover:bg-gray-700/50 rounded-lg">
+                            <SelectContent className="bg-gray-700/95 border-gray-600/50 backdrop-blur-xl rounded-xl z-50">
+                              <SelectItem value="Pendente" className="text-white hover:bg-gray-600/50 rounded-lg">
                                 <div className="flex items-center">
-                                  <div className="w-3 h-3 bg-amber-500 rounded-full mr-3" />
+                                  <div className="w-3 h-3 bg-yellow-500 rounded-full mr-3" />
                                   Pendente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Urgente" className="text-white hover:bg-gray-700/50 rounded-lg">
+                              <SelectItem value="Urgente" className="text-white hover:bg-gray-600/50 rounded-lg">
                                 <div className="flex items-center">
                                   <div className="w-3 h-3 bg-red-500 rounded-full mr-3" />
                                   Urgente
                                 </div>
                               </SelectItem>
-                              <SelectItem value="Finalizado" className="text-white hover:bg-gray-700/50 rounded-lg">
+                              <SelectItem value="Finalizado" className="text-white hover:bg-gray-600/50 rounded-lg">
                                 <div className="flex items-center">
-                                  <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3" />
+                                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3" />
                                   Finalizado
                                 </div>
                               </SelectItem>
@@ -616,7 +664,7 @@ const Index = () => {
           
           {pedidos.length === 0 && (
             <div className="text-center py-16 animate-fade-in">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center mx-auto mb-6">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center mx-auto mb-6">
                 <Package className="w-12 h-12 text-gray-400" />
               </div>
               <p className="text-gray-300 text-xl font-semibold mb-2">Nenhum pedido cadastrado ainda</p>
